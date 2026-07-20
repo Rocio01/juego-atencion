@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /home/zulma/Escritorio/juego-atencion/reference)",
+      "Bash(cp \"/tmp/claude-1000/-home-zulma-Escritorio-juego-atencion/2c542224-da3b-42ee-a5df-cc660818ba6f/scratchpad/ref-extract/App cognitiva.dc.html\" \"/home/zulma/Escritorio/juego-atencion/reference/App-cognitiva.dc.html\")",
+      "Bash(npm run *)",
+      "Skill(run)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(npm install *)",
+      "Bash(node test.js)",
+      "Bash(node test2.js)",
+      "Bash(node test3.js)",
+      "Bash(node test4.js)"
+    ]
+  }
+}
