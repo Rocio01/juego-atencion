@@ -14,8 +14,8 @@ export const PALETTES: Record<PaletteName, Palette> = {
     primary: 'oklch(46% 0.17 40)',
     primaryText: 'oklch(99% 0.005 90)',
     line: 'oklch(58% 0.04 60)',
-    good: 'oklch(55% 0.12 145)',
-    warn: 'oklch(58% 0.11 70)',
+    good: 'oklch(48% 0.12 145)',
+    warn: 'oklch(52% 0.17 35)',
     accents: ['oklch(55% 0.15 25)', 'oklch(50% 0.12 250)', 'oklch(62% 0.14 95)'],
   },
   marino: {
@@ -27,8 +27,8 @@ export const PALETTES: Record<PaletteName, Palette> = {
     primary: 'oklch(35% 0.10 255)',
     primaryText: 'oklch(98% 0.01 90)',
     line: 'oklch(55% 0.03 250)',
-    good: 'oklch(52% 0.11 155)',
-    warn: 'oklch(56% 0.10 75)',
+    good: 'oklch(47% 0.11 155)',
+    warn: 'oklch(48% 0.15 15)',
     accents: ['oklch(52% 0.15 25)', 'oklch(45% 0.12 250)', 'oklch(60% 0.13 95)'],
   },
   bosque: {
@@ -41,7 +41,7 @@ export const PALETTES: Record<PaletteName, Palette> = {
     primaryText: 'oklch(98% 0.01 90)',
     line: 'oklch(52% 0.03 130)',
     good: 'oklch(45% 0.12 150)',
-    warn: 'oklch(56% 0.11 75)',
+    warn: 'oklch(52% 0.15 55)',
     accents: ['oklch(52% 0.16 30)', 'oklch(46% 0.12 250)', 'oklch(62% 0.13 95)'],
   },
 };
