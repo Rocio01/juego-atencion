@@ -105,9 +105,9 @@ export function GameScreen({
           <SignQuestion round={round} palette={palette} onAnswer={onAnswerSign} />
         )}
         {phase === 'pregunta-sector' && <SectorQuestion palette={palette} onAnswer={onAnswerSector} />}
-        {phase === 'feedback' && state.lastRoundCorrect !== null && (
+        {phase === 'feedback' && state.lastRoundResult !== null && (
           <Feedback
-            correct={state.lastRoundCorrect}
+            result={state.lastRoundResult}
             palette={palette}
             justUnlockedMilestone={state.justUnlockedMilestone}
           />

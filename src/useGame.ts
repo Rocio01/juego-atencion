@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GamePhase, GameState, ObjectVariant, PaletteName, RoundConfig, RoundResult, SessionSummary } from './types';
-import { BLANK_MS, FEEDBACK_MS, generateRound, nextStaircaseState } from './staircase';
+import { BLANK_MS, feedbackDurationMs, generateRound, nextStaircaseState } from './staircase';
 import { loadUnlockedMilestones, saveUnlockedMilestones, unlockNewMilestones } from './achievements';
 
 // --- Persistencia ------------------------------------------------------
@@ -58,17 +58,28 @@ function makeInitialState(bestLevelEver: number, unlockedMilestones: number[]): 
     signAnswer: null,
     sectorAnswer: null,
     results: [],
-    lastRoundCorrect: null,
+    lastRoundResult: null,
     bestLevelEver,
     unlockedMilestones,
     justUnlockedMilestone: null,
   };
 }
 
+// Puntaje por ronda para el % de aciertos del resumen: una ronda perfecta
+// (3/3) vale 1 punto entero; una ronda parcial (1 o 2 de 3, la que ya no
+// baja de nivel) vale medio punto en vez de cero, para que el resumen no
+// contradiga lo que el staircase ya consideró "casi bien". Solo una ronda
+// totalmente errada (0/3) vale cero.
+function roundScore(result: RoundResult): number {
+  if (result.fullyCorrect) return 1;
+  const correctCount = [result.objectCorrect, result.signCorrect, result.sectorCorrect].filter(Boolean).length;
+  return correctCount > 0 ? 0.5 : 0;
+}
+
 export function getSessionSummary(state: GameState): SessionSummary {
   const roundsPlayed = state.results.length;
-  const fullyCorrectCount = state.results.filter((r) => r.fullyCorrect).length;
-  const accuracyPct = roundsPlayed > 0 ? Math.round((fullyCorrectCount / roundsPlayed) * 100) : 0;
+  const totalScore = state.results.reduce((sum, r) => sum + roundScore(r), 0);
+  const accuracyPct = roundsPlayed > 0 ? Math.round((totalScore / roundsPlayed) * 100) : 0;
   const isNewRecord = state.maxLevelThisSession > state.bestLevelEver;
 
   return {
@@ -144,8 +155,9 @@ export function useGame() {
     const signCorrect = s.signAnswer === s.round.target.sign.id;
     const sectorCorrect = sector === s.round.target.sector;
     const fullyCorrect = objectCorrect && signCorrect && sectorCorrect;
+    const correctCount = [objectCorrect, signCorrect, sectorCorrect].filter(Boolean).length;
 
-    const { level, streak } = nextStaircaseState(fullyCorrect, { level: s.level, streak: s.streak });
+    const { level, streak } = nextStaircaseState(correctCount, { level: s.level, streak: s.streak });
     const { milestones: unlockedMilestones, newlyUnlocked } = unlockNewMilestones(s.unlockedMilestones, level);
     if (newlyUnlocked !== null) {
       saveUnlockedMilestones(unlockedMilestones);
@@ -161,6 +173,14 @@ export function useGame() {
     const results = [...s.results, result];
     const maxLevelThisSession = Math.max(s.maxLevelThisSession, level);
 
+    // El récord se persiste apenas se supera, igual que las medallas: si se
+    // cierra la pestaña a mitad de sesión, no se pierde. El estado en memoria
+    // (bestLevelEver) se actualiza recién al terminar la sesión, para que el
+    // cartel de "nuevo récord" del resumen siga funcionando.
+    if (maxLevelThisSession > s.bestLevelEver) {
+      saveBestLevel(maxLevelThisSession);
+    }
+
     setState({
       ...s,
       sectorAnswer: sector,
@@ -170,11 +190,11 @@ export function useGame() {
       maxLevelThisSession,
       unlockedMilestones,
       justUnlockedMilestone: newlyUnlocked,
-      lastRoundCorrect: fullyCorrect,
+      lastRoundResult: result,
       phase: 'feedback',
     });
 
-    scheduleTimeout(() => runRound(level), FEEDBACK_MS);
+    scheduleTimeout(() => runRound(level), feedbackDurationMs(fullyCorrect));
   };
 
   const pauseGame = () => {
@@ -186,12 +206,18 @@ export function useGame() {
   const resumeGame = () => {
     const prev = state.phaseBeforePausa;
     if (!prev) return;
-    const round = state.round;
-    if ((prev === 'estimulo' || prev === 'blanco') && round) {
-      beginStimulusPhase(round);
+    if (prev === 'estimulo' || prev === 'blanco') {
+      // La ronda pausada ya mostró (parte de) su estímulo: repetir la
+      // exposición completa regalaría una segunda mirada y anularía el
+      // desafío de memoria. Se descarta y se genera una ronda nueva del
+      // mismo nivel, sin registrar resultado.
+      runRound(state.level);
     } else if (prev === 'feedback') {
       setState((s) => ({ ...s, phase: 'feedback', phaseBeforePausa: null }));
-      scheduleTimeout(() => runRound(state.level), FEEDBACK_MS);
+      scheduleTimeout(
+        () => runRound(state.level),
+        feedbackDurationMs(state.lastRoundResult?.fullyCorrect ?? true),
+      );
     } else {
       setState((s) => ({ ...s, phase: prev, phaseBeforePausa: null }));
     }
@@ -210,7 +236,10 @@ export function useGame() {
 
   const exitToHome = () => {
     clearTimers();
-    setState((s) => makeInitialState(s.bestLevelEver, s.unlockedMilestones));
+    // Al salir sin pasar por "Terminar sesión" (ej. desde la pausa), el récord
+    // ya se persistió ronda a ronda; el estado en memoria también tiene que
+    // reflejarlo para que la pantalla de inicio no muestre un valor viejo.
+    setState((s) => makeInitialState(Math.max(s.bestLevelEver, s.maxLevelThisSession), s.unlockedMilestones));
   };
 
   const setPalette = (name: PaletteName) => {
