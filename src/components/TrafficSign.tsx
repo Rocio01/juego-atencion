@@ -69,16 +69,26 @@ export function TrafficSign({ sign, size }: Props) {
 
   if (sign.shape === 'triangulo') {
     const isCeda = sign.id === 'ceda-paso';
+    if (isCeda) {
+      // Banda roja gruesa dominante, como la señal real: sin ella el
+      // triángulo casi vacío se confunde con las figuras distractoras.
+      return (
+        <svg width={size} height={size} viewBox="0 0 100 100" aria-label={sign.label} style={{ maxWidth: '100%', height: 'auto' }}>
+          <polygon points={TRIANGLE_DOWN_POINTS} fill={SIGN_COLORS.red} stroke={SIGN_COLORS.red} strokeWidth="8" strokeLinejoin="round" />
+          <polygon points="26,24 74,24 50,66" fill={SIGN_COLORS.white} />
+        </svg>
+      );
+    }
     return (
       <svg width={size} height={size} viewBox="0 0 100 100" aria-label={sign.label} style={{ maxWidth: '100%', height: 'auto' }}>
         <polygon
-          points={isCeda ? TRIANGLE_DOWN_POINTS : TRIANGLE_UP_POINTS}
-          fill={isCeda ? SIGN_COLORS.white : SIGN_COLORS.yellow}
+          points={TRIANGLE_UP_POINTS}
+          fill={SIGN_COLORS.yellow}
           stroke={SIGN_COLORS.red}
-          strokeWidth={isCeda ? 8 : 5}
+          strokeWidth="5"
           strokeLinejoin="round"
         />
-        {!isCeda && <WalkingPersonIcon />}
+        <WalkingPersonIcon />
       </svg>
     );
   }

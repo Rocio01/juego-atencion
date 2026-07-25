@@ -2,14 +2,25 @@ import { describe, expect, it } from 'vitest';
 import {
   DISTRACTOR_LEVEL_1,
   DISTRACTOR_LEVEL_2,
+  FEEDBACK_MS,
+  FEEDBACK_WITH_ERRORS_MS,
   MAX_EXPOSURE_MS,
   MIN_EXPOSURE_MS,
   distractorCountForLevel,
   exposureForLevel,
+  feedbackDurationMs,
   generateRound,
   nextStaircaseState,
-  preferSameFamilyForLevel,
+  questionOptionCountForLevel,
 } from './staircase';
+
+describe('feedbackDurationMs', () => {
+  it('da más tiempo de lectura cuando la ronda tuvo errores', () => {
+    expect(feedbackDurationMs(true)).toBe(FEEDBACK_MS);
+    expect(feedbackDurationMs(false)).toBe(FEEDBACK_WITH_ERRORS_MS);
+    expect(FEEDBACK_WITH_ERRORS_MS).toBeGreaterThan(FEEDBACK_MS);
+  });
+});
 
 describe('exposureForLevel', () => {
   it('empieza en el máximo en el nivel 1', () => {
@@ -55,62 +66,74 @@ describe('distractorCountForLevel', () => {
   });
 });
 
-describe('preferSameFamilyForLevel', () => {
-  it('es falso justo antes del umbral de 2 distractores', () => {
-    expect(preferSameFamilyForLevel(DISTRACTOR_LEVEL_2 - 1)).toBe(false);
-  });
-
-  it('es verdadero desde el umbral de 2 distractores', () => {
-    expect(preferSameFamilyForLevel(DISTRACTOR_LEVEL_2)).toBe(true);
-    expect(preferSameFamilyForLevel(DISTRACTOR_LEVEL_2 + 10)).toBe(true);
+describe('questionOptionCountForLevel', () => {
+  it('escala 3 -> 4 -> 5 con los mismos umbrales que los distractores', () => {
+    expect(questionOptionCountForLevel(1)).toBe(3);
+    expect(questionOptionCountForLevel(DISTRACTOR_LEVEL_1 - 1)).toBe(3);
+    expect(questionOptionCountForLevel(DISTRACTOR_LEVEL_1)).toBe(4);
+    expect(questionOptionCountForLevel(DISTRACTOR_LEVEL_2)).toBe(5);
+    expect(questionOptionCountForLevel(DISTRACTOR_LEVEL_2 + 20)).toBe(5);
   });
 });
 
-describe('nextStaircaseState (regla 3-arriba / 1-abajo)', () => {
-  it('un acierto aislado no sube de nivel, solo acumula racha', () => {
-    const result = nextStaircaseState(true, { level: 1, streak: 0 });
+describe('nextStaircaseState (regla 3-arriba / 1-abajo, con colchón para errores parciales)', () => {
+  it('un acierto aislado (3/3) no sube de nivel, solo acumula racha', () => {
+    const result = nextStaircaseState(3, { level: 1, streak: 0 });
     expect(result).toEqual({ level: 1, streak: 1 });
   });
 
   it('dos aciertos seguidos tampoco alcanzan para subir', () => {
     let s = { level: 1, streak: 0 };
-    s = nextStaircaseState(true, s);
-    s = nextStaircaseState(true, s);
+    s = nextStaircaseState(3, s);
+    s = nextStaircaseState(3, s);
     expect(s).toEqual({ level: 1, streak: 2 });
   });
 
   it('el tercer acierto seguido sube un nivel y reinicia la racha', () => {
     let s = { level: 1, streak: 0 };
-    s = nextStaircaseState(true, s);
-    s = nextStaircaseState(true, s);
-    s = nextStaircaseState(true, s);
+    s = nextStaircaseState(3, s);
+    s = nextStaircaseState(3, s);
+    s = nextStaircaseState(3, s);
     expect(s).toEqual({ level: 2, streak: 0 });
   });
 
-  it('un fallo baja un nivel y reinicia la racha', () => {
-    const result = nextStaircaseState(false, { level: 5, streak: 2 });
+  it('una ronda totalmente errada (0/3) baja un nivel y reinicia la racha', () => {
+    const result = nextStaircaseState(0, { level: 5, streak: 2 });
     expect(result).toEqual({ level: 4, streak: 0 });
   });
 
-  it('un fallo en el nivel 1 no baja del piso', () => {
-    const result = nextStaircaseState(false, { level: 1, streak: 0 });
+  it('una ronda totalmente errada en el nivel 1 no baja del piso', () => {
+    const result = nextStaircaseState(0, { level: 1, streak: 0 });
     expect(result).toEqual({ level: 1, streak: 0 });
+  });
+
+  it('una ronda parcial (1 o 2 de 3) corta la racha pero NO baja de nivel', () => {
+    expect(nextStaircaseState(1, { level: 5, streak: 2 })).toEqual({ level: 5, streak: 0 });
+    expect(nextStaircaseState(2, { level: 5, streak: 2 })).toEqual({ level: 5, streak: 0 });
   });
 
   it('una racha larga sube un nivel cada 3 aciertos consecutivos', () => {
     let s = { level: 1, streak: 0 };
     for (let i = 0; i < 9; i++) {
-      s = nextStaircaseState(true, s);
+      s = nextStaircaseState(3, s);
     }
     expect(s).toEqual({ level: 4, streak: 0 });
   });
 
-  it('un fallo interrumpe la racha antes de completar 3 aciertos', () => {
+  it('una ronda totalmente errada interrumpe la racha antes de completar 3 aciertos', () => {
     let s = { level: 3, streak: 0 };
-    s = nextStaircaseState(true, s); // streak 1
-    s = nextStaircaseState(true, s); // streak 2
-    s = nextStaircaseState(false, s); // corta la racha, baja de nivel
+    s = nextStaircaseState(3, s); // streak 1
+    s = nextStaircaseState(3, s); // streak 2
+    s = nextStaircaseState(0, s); // corta la racha, baja de nivel
     expect(s).toEqual({ level: 2, streak: 0 });
+  });
+
+  it('una ronda parcial interrumpe la racha pero no baja de nivel', () => {
+    let s = { level: 3, streak: 0 };
+    s = nextStaircaseState(3, s); // streak 1
+    s = nextStaircaseState(3, s); // streak 2
+    s = nextStaircaseState(2, s); // corta la racha, nivel se mantiene
+    expect(s).toEqual({ level: 3, streak: 0 });
   });
 });
 
@@ -142,5 +165,14 @@ describe('generateRound', () => {
 
   it('la exposición del round coincide con exposureForLevel', () => {
     expect(generateRound(10).exposureMs).toBe(exposureForLevel(10));
+  });
+
+  it('las opciones de señal y de objeto escalan juntas con el nivel', () => {
+    expect(generateRound(1).signOptions).toHaveLength(3);
+    expect(generateRound(1).objectOptions).toHaveLength(3);
+    expect(generateRound(DISTRACTOR_LEVEL_1).signOptions).toHaveLength(4);
+    expect(generateRound(DISTRACTOR_LEVEL_1).objectOptions).toHaveLength(4);
+    expect(generateRound(DISTRACTOR_LEVEL_2).signOptions).toHaveLength(5);
+    expect(generateRound(DISTRACTOR_LEVEL_2).objectOptions).toHaveLength(5);
   });
 });

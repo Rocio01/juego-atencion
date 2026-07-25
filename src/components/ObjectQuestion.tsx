@@ -1,5 +1,5 @@
 import type { BirdVariant, BoatVariant, ObjectVariant, Palette, RoundConfig, VehicleVariant } from '../types';
-import { CATEGORY_DEFS, CATEGORY_QUESTION } from '../data/objects';
+import { CATEGORY_QUESTION } from '../data/objects';
 import { VehicleShape } from './VehicleShape';
 import { BirdShape } from './BirdShape';
 import { BoatShape } from './BoatShape';
@@ -12,7 +12,7 @@ interface Props {
 
 export function ObjectQuestion({ round, palette, onAnswer }: Props) {
   const category = round.central.def.category;
-  const options = CATEGORY_DEFS[category];
+  const options = round.objectOptions;
 
   return (
     <div

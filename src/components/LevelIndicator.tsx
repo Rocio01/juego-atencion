@@ -1,12 +1,11 @@
 import type { Palette } from '../types';
+import { STREAK_THRESHOLD } from '../staircase';
 
 interface Props {
   level: number;
   streak: number;
   palette: Palette;
 }
-
-const STREAK_THRESHOLD = 3;
 
 export function LevelIndicator({ level, streak, palette }: Props) {
   return (

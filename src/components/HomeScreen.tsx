@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import type { Palette, PaletteName } from '../types';
 import { PALETTE_LIST } from '../palettes';
 import { MILESTONE_STEP } from '../achievements';
 import { AchievementBadge } from './AchievementBadge';
+import { RulesOverlay } from './RulesOverlay';
+import { TouchButton } from './TouchButton';
 
 interface Props {
   palette: Palette;
@@ -20,6 +23,8 @@ export function HomeScreen({
   unlockedMilestones,
   onStart,
 }: Props) {
+  const [showRules, setShowRules] = useState(false);
+
   return (
     <div
       style={{
@@ -47,26 +52,26 @@ export function HomeScreen({
         </div>
       )}
 
-      <button
+      <TouchButton
         onClick={onStart}
+        palette={palette}
+        variant="primary"
         style={{
           marginTop: 'clamp(8px,2vh,16px)',
           width: 'min(560px,90vw)',
           minHeight: 100,
           height: 'clamp(100px,14vh,140px)',
           borderRadius: 28,
-          background: palette.primary,
-          color: palette.primaryText,
           fontSize: 'clamp(32px,4.5vw,46px)',
-          fontWeight: 700,
-          border: 'none',
-          cursor: 'pointer',
           boxShadow: '0 8px 0 rgba(0,0,0,0.18)',
-          fontFamily: 'inherit',
         }}
       >
         Jugar
-      </button>
+      </TouchButton>
+
+      <TouchButton onClick={() => setShowRules(true)} palette={palette} variant="secondary">
+        ¿Cómo se juega?
+      </TouchButton>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, marginTop: 8, maxWidth: 560 }}>
         <div style={{ fontSize: 20, opacity: 0.8 }}>Tus medallas</div>
@@ -104,6 +109,8 @@ export function HomeScreen({
           ))}
         </div>
       </div>
+
+      {showRules && <RulesOverlay palette={palette} onClose={() => setShowRules(false)} />}
     </div>
   );
 }

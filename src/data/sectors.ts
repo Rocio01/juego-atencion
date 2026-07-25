@@ -1,5 +1,7 @@
 // Geometría de los 6 sectores del círculo de estímulo periférico.
 
+export const TOTAL_SECTORS = 6;
+
 export const SECTOR_CLIPS: string[] = [
   'polygon(50% 50%, 50% 0%, 93.3% 25%)',
   'polygon(50% 50%, 93.3% 25%, 93.3% 75%)',

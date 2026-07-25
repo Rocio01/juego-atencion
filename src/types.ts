@@ -28,9 +28,9 @@ export type VehicleVariant =
   | 'camion'
   | 'furgoneta';
 
-export type BirdVariant = 'paloma' | 'aguila' | 'colibri';
+export type BirdVariant = 'paloma' | 'aguila' | 'colibri' | 'buho' | 'pato' | 'flamenco';
 
-export type BoatVariant = 'velero' | 'lancha' | 'carga';
+export type BoatVariant = 'velero' | 'lancha' | 'carga' | 'canoa' | 'pesquero' | 'crucero';
 
 export type ObjectVariant = VehicleVariant | BirdVariant | BoatVariant;
 
@@ -64,15 +64,27 @@ export interface PlacedSign {
   sector: number; // 0-5
 }
 
+// Distractores periféricos: formas geométricas neutras (no señales reales),
+// para que la única señal de tránsito visible en la rueda sea siempre la
+// que hay que recordar.
+
+export type GeoShapeKind = 'cuadrado' | 'estrella' | 'cruz' | 'hexagono' | 'pentagono';
+
+export interface PlacedGeoShape {
+  shape: GeoShapeKind;
+  sector: number; // 0-5
+}
+
 // Configuración y resultado de una ronda
 
 export interface RoundConfig {
   level: number;
   central: CentralObject;
   target: PlacedSign;
-  distractors: PlacedSign[];
+  distractors: PlacedGeoShape[];
   exposureMs: number;
   signOptions: SignDef[];
+  objectOptions: ObjectDef[];
 }
 
 export interface RoundResult {
@@ -107,7 +119,7 @@ export interface GameState {
   signAnswer: string | null;
   sectorAnswer: number | null;
   results: RoundResult[];
-  lastRoundCorrect: boolean | null;
+  lastRoundResult: RoundResult | null;
   bestLevelEver: number;
   unlockedMilestones: number[];
   justUnlockedMilestone: number | null;

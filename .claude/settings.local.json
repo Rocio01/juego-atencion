@@ -11,7 +11,8 @@
       "Bash(node test.js)",
       "Bash(node test2.js)",
       "Bash(node test3.js)",
-      "Bash(node test4.js)"
+      "Bash(node test4.js)",
+      "Bash(npx tsc *)"
     ]
   }
 }

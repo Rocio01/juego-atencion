@@ -10,7 +10,7 @@ export function SectorQuestion({ palette, onAnswer }: Props) {
   return (
     <div className="anim-fade-up" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(24px,4vh,40px)' }}>
       <div style={{ fontSize: 'clamp(26px,3.6vw,38px)', fontWeight: 700, textAlign: 'center' }}>
-        ¿En qué sector apareció?
+        ¿En qué sector apareció la señal?
       </div>
       <div style={{ position: 'relative', width: 'min(70vw,60vh,480px)', aspectRatio: '1' }}>
         <div
