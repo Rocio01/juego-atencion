@@ -1,6 +1,7 @@
 import type { GamePhase, Palette, RoundConfig } from '../types';
 import { SECTOR_CENTERS } from '../data/sectors';
 import { TrafficSign } from './TrafficSign';
+import { GeoDistractor } from './GeoDistractor';
 import { CentralObjectShape } from './CentralObjectShape';
 
 interface Props {
@@ -44,12 +45,31 @@ export function StimulusWheel({ phase, round, palette }: Props) {
         />
       ))}
 
+      {showSigns && (
+        <div
+          key={round.target.sign.id + round.target.sector}
+          style={{
+            position: 'absolute',
+            left: `${SECTOR_CENTERS[round.target.sector].left}%`,
+            top: `${SECTOR_CENTERS[round.target.sector].top}%`,
+            transform: 'translate(-50%, -50%)',
+            width: 'min(64px, 19%)',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <div className="anim-pop" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <TrafficSign sign={round.target.sign} size={64} />
+          </div>
+        </div>
+      )}
+
       {showSigns &&
-        [round.target, ...round.distractors].map((placed) => {
+        round.distractors.map((placed) => {
           const pos = SECTOR_CENTERS[placed.sector];
           return (
             <div
-              key={placed.sign.id + placed.sector}
+              key={placed.shape + placed.sector}
               style={{
                 position: 'absolute',
                 left: `${pos.left}%`,
@@ -61,7 +81,7 @@ export function StimulusWheel({ phase, round, palette }: Props) {
               }}
             >
               <div className="anim-pop" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                <TrafficSign sign={placed.sign} size={64} />
+                <GeoDistractor shape={placed.shape} palette={palette} size={64} />
               </div>
             </div>
           );

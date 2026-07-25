@@ -1,5 +1,6 @@
 import type { PlacedSign, SignDef } from '../types';
-import { pickRandom, sample, shuffle } from '../utils';
+import { pickRandom, randomInt, sample, shuffle } from '../utils';
+import { TOTAL_SECTORS } from './sectors';
 
 export const SIGN_CATALOG: SignDef[] = [
   { id: 'alto', shape: 'octagono', label: 'Alto' },
@@ -13,71 +14,32 @@ export const SIGN_CATALOG: SignDef[] = [
   { id: 'cruce-ferrocarril', shape: 'rombo', label: 'Cruce de ferrocarril', icon: 'ferrocarril' },
 ];
 
-const TOTAL_SECTORS = 6;
-
 export function pickTargetSign(): SignDef {
   return pickRandom(SIGN_CATALOG);
 }
 
-// Distractores: en dificultad baja se prefiere una forma distinta a la del
-// objetivo (fácil de distinguir); en dificultad alta se prefiere la misma
-// familia de forma (ej. dos triángulos), lo que las hace genuinamente
-// confusables. Si la familia no tiene suficientes miembros, se completa con
-// el resto del catálogo.
-export function pickDistractorSigns(
-  target: SignDef,
-  count: number,
-  preferSameFamily: boolean,
-): SignDef[] {
-  if (count <= 0) return [];
+// La señal objetivo es la única señal de tránsito real que aparece en la
+// rueda (los distractores son formas geométricas, ver data/geoShapes.ts), así
+// que solo necesita un sector propio, sin competir con otras señales.
+export function placeTargetSign(sign: SignDef): PlacedSign {
+  return { sign, sector: randomInt(TOTAL_SECTORS) };
+}
 
+// Opciones para la pregunta "¿Qué señal viste?": el objetivo + señales
+// parecidas (misma familia primero, para que la opción correcta no salte a
+// la vista) + el resto del catálogo hasta completar la cantidad, que la
+// decide el nivel (ver questionOptionCountForLevel en staircase.ts), en
+// orden aleatorio. Ninguna de estas opciones estuvo realmente en pantalla:
+// solo la señal objetivo se mostró, así que no hay ambigüedad sobre cuál
+// recordar.
+export function buildSignQuestionOptions(target: SignDef, optionCount = 4): SignDef[] {
   const rest = SIGN_CATALOG.filter((s) => s.id !== target.id);
   const sameFamily = rest.filter((s) => s.shape === target.shape);
   const otherFamily = rest.filter((s) => s.shape !== target.shape);
 
-  const preferred = preferSameFamily ? sameFamily : otherFamily;
-  const fallback = preferSameFamily ? otherFamily : sameFamily;
+  const chosenSameFamily = sample(sameFamily, optionCount - 1);
+  const remaining = optionCount - 1 - chosenSameFamily.length;
+  const chosenOtherFamily = remaining > 0 ? sample(otherFamily, remaining) : [];
 
-  const chosenPreferred = sample(preferred, count);
-  const remaining = count - chosenPreferred.length;
-  const chosenFallback = remaining > 0 ? sample(fallback, remaining) : [];
-
-  return [...chosenPreferred, ...chosenFallback];
-}
-
-export function placeSignsInSectors(signs: SignDef[]): PlacedSign[] {
-  const sectors = sample(
-    Array.from({ length: TOTAL_SECTORS }, (_, i) => i),
-    signs.length,
-  );
-  return signs.map((sign, i) => ({ sign, sector: sectors[i] }));
-}
-
-// Opciones para la pregunta "¿Qué señal viste?": el objetivo + señales
-// parecidas (misma familia primero) + las que realmente aparecieron como
-// distractores en esta ronda, hasta un máximo de 4, en orden aleatorio.
-export function buildSignQuestionOptions(
-  target: SignDef,
-  distractorsShown: SignDef[],
-  optionCount = 4,
-): SignDef[] {
-  const rest = SIGN_CATALOG.filter((s) => s.id !== target.id);
-  const sameFamily = rest.filter((s) => s.shape === target.shape);
-  const shownIds = new Set(distractorsShown.map((s) => s.id));
-
-  const priority = [
-    ...distractorsShown,
-    ...sameFamily.filter((s) => !shownIds.has(s.id)),
-    ...rest.filter((s) => s.shape !== target.shape),
-  ];
-
-  const seen = new Set<string>();
-  const uniquePriority = priority.filter((s) => {
-    if (seen.has(s.id)) return false;
-    seen.add(s.id);
-    return true;
-  });
-
-  const extras = uniquePriority.slice(0, Math.max(0, optionCount - 1));
-  return shuffle([target, ...extras]);
+  return shuffle([target, ...chosenSameFamily, ...chosenOtherFamily]);
 }
