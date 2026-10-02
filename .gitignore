@@ -29,3 +29,6 @@ dist-ssr
 !.dev.vars.example
 .env*
 !.env.example
+
+# Claude Code local settings (machine-specific permissions and paths)
+.claude/settings.local.json
