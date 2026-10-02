@@ -1,32 +1,53 @@
-# React + TypeScript + Vite
+# Attention training game
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A cognitive training web app I built for my parents. Each round flashes a
+central object and a traffic sign somewhere in the periphery, then asks three
+quick questions. Difficulty adapts to each player, so the game stays
+challenging without becoming frustrating.
 
-Currently, two official plugins are available:
+**Live demo:** https://juego-atencion.zrmartinezg.workers.dev/ (the interface is in Spanish)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## How a round works
 
-## React Compiler
+1. A central object (a vehicle, a bird or a boat) and a traffic sign in one of
+   six sectors around it appear for a short time.
+2. Then the player answers: which object was in the center, which sector the
+   sign was in, and which sign it was.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Training the center and the periphery together targets divided attention.
 
-## Expanding the Oxlint configuration
+## Adaptive difficulty
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+A staircase algorithm (`src/staircase.ts`) uses one level number to control
+two kinds of difficulty:
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+- **Exposure time** drops from 2400 ms to 800 ms in steps of 80 ms.
+- **Distractors:** neutral geometric shapes are added at levels 8 and 15. They
+  are never real signs, so the answer is never ambiguous.
+
+The level goes up after three fully correct rounds in a row and down after a
+round with no correct answers. A partly correct round only resets the streak.
+This 3-up / 1-down rule is standard in adaptive psychophysics, and it settles
+near 79% correct answers.
+
+The best level and the milestone badges (every 5 levels) are saved in
+`localStorage`. The player can choose among three color palettes.
+
+## Stack
+
+Vite · React 19 · TypeScript · Vitest · Oxlint · Cloudflare Workers (static
+assets)
+
+## Run it locally
+
+```sh
+npm install
+npm run dev      # development server
+npm test         # unit tests (staircase, data, achievements, game state)
+npm run lint
+npm run deploy   # build and deploy to Cloudflare Workers
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## License
+
+MIT, see [LICENSE](LICENSE).
